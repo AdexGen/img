@@ -1,125 +1,96 @@
-    margin-bottom: 9px;
-  }
+/* =========================================================
+   SILIX.IMG — Stylesheet
+   Apariencia oscura, acentos rojos y diseño adaptable
+   ========================================================= */
 
-  .drop-zone-text {
-    font-size: 0.9rem;
-  }
+:root {
+  color-scheme: dark;
 
-  .drop-zone-hint {
-    max-width: 290px;
-    font-size: 0.72rem;
-  }
+  --bg-color: #080c14;
+  --bg-soft: #0b1120;
+  --card-bg: rgba(17, 24, 39, 0.78);
+  --card-bg-solid: #111827;
+  --card-border: rgba(255, 255, 255, 0.085);
 
-  .preview-container,
-  .results-container {
-    margin-bottom: 18px;
-  }
+  --primary-red: #f90502;
+  --primary-red-hover: #ff2924;
+  --primary-red-active: #c90000;
+  --primary-red-soft: rgba(249, 5, 2, 0.09);
+  --primary-red-border: rgba(249, 5, 2, 0.3);
+  --primary-red-glow: rgba(249, 5, 2, 0.2);
 
-  .preview-list,
-  .results-list {
-    max-height: 34vh;
-    max-height: 34dvh;
-  }
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
 
-  .preview-item,
-  .result-item {
-    gap: 9px;
-    padding: 8px;
-  }
+  --input-bg: #0b1220;
+  --input-border: #263247;
+  --input-border-hover: #3a4962;
 
-  .preview-thumb,
-  .result-thumb {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
-  }
+  --success: #4ade80;
+  --danger: #fb7185;
 
-  .download-link-btn {
-    min-height: 33px;
-    padding: 7px 9px;
-    font-size: 0.72rem;
-  }
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
 
-  button#convertBtn {
-    min-height: 51px;
-    padding: 14px 16px;
-  }
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
 
-  .local-privacy-badge {
-    margin-top: 18px;
-    font-size: 0.69rem;
-  }
+  --ease-standard: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --transition-fast: 160ms var(--ease-standard);
+  --transition-normal: 220ms var(--ease-standard);
 }
 
-@media (max-width: 380px) {
-  .container {
-    padding-right: 12px;
-    padding-left: 12px;
-  }
+/* ------------------------- Reset ------------------------- */
 
-  .switch-container {
-    gap: 10px;
-    padding-right: 11px;
-    padding-left: 11px;
-  }
-
-  .switch-label {
-    font-size: 0.81rem;
-  }
-
-  .preview-item,
-  .result-item {
-    gap: 7px;
-  }
-
-  .preview-filename,
-  .result-filename {
-    font-size: 0.75rem;
-  }
-
-  .download-link-btn {
-    padding: 7px 8px;
-    font-size: 0.68rem;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-/* Use the device's real viewport height and respect motion preferences. */
-@supports (height: 100dvh) {
-  .container {
-    height: 100dvh;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--bg-color);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scrollbar-color: #354156 var(--bg-color);
+  scrollbar-width: thin;
 }
 
-/* Mensajes por archivo cuando un formato no puede generarse */
-.result-item-error {
-  border-color: rgba(244, 34, 57, 0.38);
-  background: rgba(244, 34, 57, 0.07);
+body {
+  position: relative;
+  width: 100%;
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% -18%, rgba(244, 34, 57, 0.075), transparent 52%),
+    var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.result-item-error .result-filename {
-  color: #ff8794;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.result-item-error .preview-size {
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-button:disabled {
-  cursor: wait;
-  opacity: 0.72;
-  transform: none !important;
-}
+body::before {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  top: 42%;
