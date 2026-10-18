@@ -1,24 +1,3 @@
-const imageInput = document.getElementById('imageInput');
-const formatSelect = document.getElementById('formatSelect');
-const fillBgCheckbox = document.getElementById('fillBgCheckbox');
-const colorPickerBox = document.getElementById('colorPickerBox');
-const bgColorInput = document.getElementById('bgColor');
-const convertBtn = document.getElementById('convertBtn');
-const previewContainer = document.getElementById('previewContainer');
-const previewList = document.getElementById('previewList');
-const removeAllBtn = document.getElementById('removeAllBtn');
-const resultsContainer = document.getElementById('resultsContainer');
-const resultsList = document.getElementById('resultsList');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-
-const transparentFormats = ['png', 'webp', 'avif', 'gif', 'x-icon'];
-let selectedFiles = [];
-
-// ==========================================
-// DICCIONARIO DE TRADUCCIONES
-// ==========================================
-// El inglés viene directamente en el HTML.
 const translations = {
   es: {
     subtitle: "Convertidor de Imágenes",
@@ -157,43 +136,114 @@ const translations = {
   }
 };
 
-// Detectar los primeros 2 caracteres del idioma del navegador (ej. "it-IT" -> "it", "ja-JP" -> "ja")
-const userLang = (navigator.language || navigator.userLanguage || '').substring(0, 2);
+// Silix.IMG — lógica local del conversor
+// Las imágenes se procesan en el navegador; este archivo no realiza solicitudes de red.
 
-// Aplicar traducciones únicamente si el idioma está disponible
-function applyTranslations() {
-  if (translations[userLang]) {
-    document.querySelectorAll('[data-i18n]').forEach(element => {
-      const key = element.getAttribute('data-i18n');
-      if (translations[userLang][key]) {
-        element.textContent = translations[userLang][key];
-      }
-    });
+const userLang = (navigator.language || navigator.userLanguage || 'en').substring(0, 2);
+const selectedFiles = [];
+const previewObjectUrls = new Set();
+const resultObjectUrls = new Set();
+let isConverting = false;
+
+const TEXT = {
+  en: {
+    alertSelectImg: 'Please select at least one image.',
+    converting: 'Converting…',
+    convertBtn: 'Convert Image',
+    saveBtn: 'Save',
+    unsupported: 'This browser cannot create the requested format. Try PNG, JPG or WEBP.',
+    gifUnsupported: 'GIF export is not available in this version. The browser canvas cannot create animated GIFs.',
+    failed: 'Could not convert this image.',
+    unsupportedFile: 'This file does not appear to be a supported image.',
+    conversionError: 'Conversion failed'
+  },
+  es: {
+    alertSelectImg: 'Por favor, selecciona al menos una imagen.',
+    converting: 'Convirtiendo…',
+    convertBtn: 'Convertir Imagen',
+    saveBtn: 'Guardar',
+    unsupported: 'Este navegador no puede generar el formato solicitado. Prueba PNG, JPG o WEBP.',
+    gifUnsupported: 'La exportación GIF no está disponible en esta versión. Canvas no puede crear GIF animados.',
+    failed: 'No se pudo convertir esta imagen.',
+    unsupportedFile: 'Este archivo no parece ser una imagen compatible.',
+    conversionError: 'Error de conversión'
+  },
+  pt: {
+    alertSelectImg: 'Por favor, selecione pelo menos uma imagem.', converting: 'Convertendo…', convertBtn: 'Converter Imagem', saveBtn: 'Salvar',
+    unsupported: 'Este navegador não consegue criar o formato solicitado. Tente PNG, JPG ou WEBP.', gifUnsupported: 'A exportação GIF não está disponível nesta versão.', failed: 'Não foi possível converter esta imagem.', unsupportedFile: 'Este arquivo não parece ser uma imagem compatível.', conversionError: 'Falha na conversão'
+  },
+  fr: {
+    alertSelectImg: 'Veuillez sélectionner au moins une image.', converting: 'Conversion…', convertBtn: "Convertir l'Image", saveBtn: 'Enregistrer',
+    unsupported: 'Ce navigateur ne peut pas créer ce format. Essayez PNG, JPG ou WEBP.', gifUnsupported: "L’export GIF n’est pas disponible dans cette version.", failed: "Impossible de convertir cette image.", unsupportedFile: "Ce fichier ne semble pas être une image compatible.", conversionError: 'Échec de conversion'
+  },
+  de: {
+    alertSelectImg: 'Bitte wählen Sie mindestens ein Bild aus.', converting: 'Konvertieren…', convertBtn: 'Bild konvertieren', saveBtn: 'Speichern',
+    unsupported: 'Dieser Browser kann das gewünschte Format nicht erstellen. Versuchen Sie PNG, JPG oder WEBP.', gifUnsupported: 'GIF-Export ist in dieser Version nicht verfügbar.', failed: 'Dieses Bild konnte nicht konvertiert werden.', unsupportedFile: 'Diese Datei scheint kein unterstütztes Bild zu sein.', conversionError: 'Konvertierung fehlgeschlagen'
+  },
+  it: {
+    alertSelectImg: 'Seleziona almeno un’immagine.', converting: 'Conversione…', convertBtn: 'Converti Immagine', saveBtn: 'Salva',
+    unsupported: 'Questo browser non può creare il formato richiesto. Prova PNG, JPG o WEBP.', gifUnsupported: 'L’esportazione GIF non è disponibile in questa versione.', failed: 'Impossibile convertire questa immagine.', unsupportedFile: 'Il file non sembra essere un’immagine supportata.', conversionError: 'Conversione non riuscita'
+  },
+  ja: {
+    alertSelectImg: '画像を少なくとも1つ選択してください。', converting: '変換中…', convertBtn: '画像を変換', saveBtn: '保存',
+    unsupported: 'このブラウザーは指定形式を作成できません。PNG、JPG、WEBPをお試しください。', gifUnsupported: 'このバージョンではGIF出力を利用できません。', failed: 'この画像を変換できませんでした。', unsupportedFile: '対応する画像ファイルではないようです。', conversionError: '変換に失敗しました'
+  },
+  zh: {
+    alertSelectImg: '请至少选择一张图片。', converting: '正在转换…', convertBtn: '转换图片', saveBtn: '保存',
+    unsupported: '此浏览器无法生成所需格式。请尝试 PNG、JPG 或 WEBP。', gifUnsupported: '此版本暂不支持导出 GIF。', failed: '无法转换此图片。', unsupportedFile: '此文件似乎不是受支持的图片。', conversionError: '转换失败'
+  },
+  ru: {
+    alertSelectImg: 'Пожалуйста, выберите хотя бы одно изображение.', converting: 'Преобразование…', convertBtn: 'Конвертировать изображение', saveBtn: 'Сохранить',
+    unsupported: 'Браузер не может создать этот формат. Попробуйте PNG, JPG или WEBP.', gifUnsupported: 'Экспорт GIF в этой версии недоступен.', failed: 'Не удалось преобразовать изображение.', unsupportedFile: 'Этот файл не похож на поддерживаемое изображение.', conversionError: 'Ошибка преобразования'
+  },
+  ko: {
+    alertSelectImg: '이미지를 하나 이상 선택하세요.', converting: '변환 중…', convertBtn: '이미지 변환', saveBtn: '저장',
+    unsupported: '이 브라우저는 요청한 형식을 만들 수 없습니다. PNG, JPG 또는 WEBP를 사용해 보세요.', gifUnsupported: '이 버전에서는 GIF 내보내기를 사용할 수 없습니다.', failed: '이미지를 변환하지 못했습니다.', unsupportedFile: '지원되는 이미지 파일이 아닌 것 같습니다.', conversionError: '변환 실패'
   }
+};
+
+const imageInput = document.getElementById('imageInput');
+const formatSelect = document.getElementById('formatSelect');
+const fillBgCheckbox = document.getElementById('fillBgCheckbox');
+const colorPickerBox = document.getElementById('colorPickerBox');
+const bgColorInput = document.getElementById('bgColor');
+const convertBtn = document.getElementById('convertBtn');
+const previewContainer = document.getElementById('previewContainer');
+const previewList = document.getElementById('previewList');
+const removeAllBtn = document.getElementById('removeAllBtn');
+const resultsContainer = document.getElementById('resultsContainer');
+const resultsList = document.getElementById('resultsList');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const dropZone = document.getElementById('dropZone');
+
+function text(key, fallback) {
+  return TEXT[userLang]?.[key] || TEXT.en[key] || fallback || key;
 }
 
-// Ejecutar al cargar la página
-document.addEventListener('DOMContentLoaded', applyTranslations);
-
-// Helper para obtener textos dinámicos o usar inglés como respaldo
-function getText(key, fallbackText) {
-  return translations[userLang]?.[key] || fallbackText;
+function applyTranslations() {
+  const dictionary = translations[userLang];
+  if (!dictionary) return;
+  document.querySelectorAll('[data-i18n]').forEach((element) => {
+    const key = element.getAttribute('data-i18n');
+    if (dictionary[key]) element.textContent = dictionary[key];
+  });
 }
-
-// ==========================================
-// EVENTOS Y LÓGICA DE LA APLICACIÓN
-// ==========================================
+applyTranslations();
 
 imageInput.addEventListener('change', () => {
-  if (imageInput.files && imageInput.files.length > 0) {
-    addFiles(Array.from(imageInput.files));
-  }
+  addFiles(Array.from(imageInput.files || []));
+  // Permite volver a seleccionar el mismo archivo.
+  imageInput.value = '';
 });
 
 removeAllBtn.addEventListener('click', () => {
-  selectedFiles = [];
-  imageInput.value = '';
-  renderPreviews();
+  selectedFiles.splice(0, selectedFiles.length);
+  clearUrls(previewObjectUrls);
+  clearUrls(resultObjectUrls);
+  previewList.replaceChildren();
+  resultsList.replaceChildren();
+  previewContainer.style.display = 'none';
   resultsContainer.style.display = 'none';
 });
 
@@ -201,184 +251,290 @@ fillBgCheckbox.addEventListener('change', () => {
   colorPickerBox.style.display = fillBgCheckbox.checked ? 'flex' : 'none';
 });
 
-function addFiles(files) {
-  files.forEach(file => {
-    selectedFiles.push(file);
+// Arrastrar y soltar: se evita que el navegador abra la imagen directamente.
+['dragenter', 'dragover'].forEach((eventName) => {
+  dropZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dropZone.classList.add('dragover');
   });
+});
+['dragleave', 'dragend'].forEach((eventName) => {
+  dropZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    dropZone.classList.remove('dragover');
+  });
+});
+dropZone.addEventListener('drop', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  dropZone.classList.remove('dragover');
+  addFiles(Array.from(event.dataTransfer?.files || []));
+});
+window.addEventListener('dragover', (event) => event.preventDefault());
+window.addEventListener('drop', (event) => event.preventDefault());
+
+function addFiles(files) {
+  const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+  const rejectedCount = files.length - imageFiles.length;
+  if (rejectedCount > 0) alert(text('unsupportedFile'));
+  imageFiles.forEach((file) => selectedFiles.push(file));
   renderPreviews();
 }
 
+function clearUrls(urlSet) {
+  urlSet.forEach((url) => URL.revokeObjectURL(url));
+  urlSet.clear();
+}
+
 function renderPreviews() {
-  previewList.innerHTML = '';
+  clearUrls(previewObjectUrls);
+  previewList.replaceChildren();
   if (selectedFiles.length === 0) {
     previewContainer.style.display = 'none';
     return;
   }
-
   previewContainer.style.display = 'block';
-
   selectedFiles.forEach((file, index) => {
     const item = document.createElement('div');
     item.className = 'preview-item';
 
     const thumb = document.createElement('img');
     thumb.className = 'preview-thumb';
+    thumb.alt = '';
     const objectUrl = URL.createObjectURL(file);
+    previewObjectUrls.add(objectUrl);
     thumb.src = objectUrl;
 
     const info = document.createElement('div');
     info.className = 'preview-info';
-
     const name = document.createElement('div');
     name.className = 'preview-filename';
     name.textContent = file.name;
-
     const meta = document.createElement('div');
     meta.className = 'preview-size';
     meta.textContent = formatBytes(file.size);
-
-    info.appendChild(name);
-    info.appendChild(meta);
+    info.append(name, meta);
 
     const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
     removeBtn.className = 'item-remove-btn';
+    removeBtn.setAttribute('aria-label', `Remove ${file.name}`);
     removeBtn.innerHTML = '&times;';
-    removeBtn.onclick = (e) => {
-      e.stopPropagation();
+    removeBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
       selectedFiles.splice(index, 1);
       renderPreviews();
-    };
-
-    item.appendChild(thumb);
-    item.appendChild(info);
-    item.appendChild(removeBtn);
+    });
+    item.append(thumb, info, removeBtn);
     previewList.appendChild(item);
   });
 }
 
-convertBtn.addEventListener('click', async () => {
+convertBtn.addEventListener('click', convertSelectedFiles);
+
+async function convertSelectedFiles() {
+  if (isConverting) return;
   if (selectedFiles.length === 0) {
-    alert(getText('alertSelectImg', 'Please select at least one image.'));
+    alert(text('alertSelectImg', 'Please select at least one image.'));
     return;
   }
 
-  resultsList.innerHTML = '';
+  const format = formatSelect.value;
+  if (format === 'gif') {
+    alert(text('gifUnsupported'));
+    return;
+  }
+
+  isConverting = true;
+  const originalButtonText = convertBtn.textContent;
+  convertBtn.disabled = true;
+  convertBtn.setAttribute('aria-busy', 'true');
+  convertBtn.textContent = text('converting');
+  clearUrls(resultObjectUrls);
+  resultsList.replaceChildren();
   resultsContainer.style.display = 'block';
 
-  const targetFormat = formatSelect.value;
-  const mimeMap = {
-    'png': 'image/png',
-    'webp': 'image/webp',
-    'jpeg': 'image/jpeg',
-    'avif': 'image/avif',
-    'gif': 'image/gif',
-    'bmp': 'image/bmp',
-    'x-icon': 'image/x-icon'
-  };
-
-  const extMap = {
-    'png': 'png',
-    'webp': 'webp',
-    'jpeg': 'jpg',
-    'avif': 'avif',
-    'gif': 'gif',
-    'bmp': 'bmp',
-    'x-icon': 'ico'
-  };
-
-  const isTransparent = transparentFormats.includes(targetFormat);
-
-  for (let i = 0; i < selectedFiles.length; i++) {
-    const file = selectedFiles[i];
-    await processAndDisplay(file, targetFormat, mimeMap[targetFormat], extMap[targetFormat], isTransparent);
+  try {
+    for (const file of [...selectedFiles]) {
+      try {
+        const blob = await convertImage(file, format);
+        const filename = getOutputFilename(file.name, format === 'jpeg' ? 'jpg' : format === 'x-icon' ? 'ico' : format);
+        const url = URL.createObjectURL(blob);
+        resultObjectUrls.add(url);
+        createResultCard(url, filename, blob.size);
+      } catch (error) {
+        createErrorCard(file.name, error?.message || text('failed'));
+      }
+    }
+  } finally {
+    isConverting = false;
+    convertBtn.disabled = false;
+    convertBtn.removeAttribute('aria-busy');
+    convertBtn.textContent = originalButtonText || text('convertBtn');
   }
-});
+}
 
-function processAndDisplay(file, format, mimeType, ext, isTransparent) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.naturalWidth || img.width;
-        let height = img.naturalHeight || img.height;
+async function convertImage(file, format) {
+  const image = await loadImage(file);
+  let width = image.naturalWidth || image.width;
+  let height = image.naturalHeight || image.height;
+  if (!width || !height) throw new Error(text('failed'));
 
-        if (format === 'x-icon') {
-          width = Math.min(width, 256);
-          height = Math.min(height, 256);
-        }
+  if (format === 'x-icon') {
+    const scale = Math.min(1, 256 / Math.max(width, height));
+    width = Math.max(1, Math.round(width * scale));
+    height = Math.max(1, Math.round(height * scale));
+  }
 
-        canvas.width = width;
-        canvas.height = height;
-        ctx.clearRect(0, 0, width, height);
+  canvas.width = width;
+  canvas.height = height;
+  ctx.clearRect(0, 0, width, height);
+  const keepsTransparency = ['png', 'webp', 'avif', 'x-icon'].includes(format);
+  if (fillBgCheckbox.checked || !keepsTransparency) {
+    ctx.fillStyle = fillBgCheckbox.checked ? bgColorInput.value : '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+  }
+  ctx.drawImage(image, 0, 0, width, height);
 
-        if (fillBgCheckbox.checked || !isTransparent) {
-          ctx.fillStyle = fillBgCheckbox.checked ? bgColorInput.value : '#ffffff';
-          ctx.fillRect(0, 0, width, height);
-        }
+  if (format === 'bmp') return encodeBmp(ctx.getImageData(0, 0, width, height));
+  if (format === 'x-icon') {
+    const png = await canvasToBlob('image/png');
+    return wrapPngAsIco(png, width, height);
+  }
 
-        ctx.drawImage(img, 0, 0, width, height);
+  const mime = ({ png: 'image/png', jpeg: 'image/jpeg', webp: 'image/webp', avif: 'image/avif' })[format];
+  if (!mime) throw new Error(text('unsupported'));
+  const blob = await canvasToBlob(mime, 0.92);
+  if (blob.type !== mime) throw new Error(text('unsupported'));
+  return blob;
+}
 
-        const outName = getOutputFilename(file.name, ext);
-
-        canvas.toBlob((blob) => {
-          let url;
-          if (blob) {
-            url = URL.createObjectURL(blob);
-          } else {
-            url = canvas.toDataURL('image/png');
-          }
-          createResultCard(url, outName);
-          resolve();
-        }, mimeType, 0.92);
-      };
-      img.src = e.target.result;
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
     };
-    reader.readAsDataURL(file);
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error(text('unsupportedFile')));
+    };
+    image.src = url;
   });
 }
 
-function createResultCard(url, filename) {
+function canvasToBlob(type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) return reject(new Error(text('unsupported')));
+      resolve(blob);
+    }, type, quality);
+  });
+}
+
+// BMP de 24 bits, sin compresión, generado directamente desde los píxeles del canvas.
+function encodeBmp(imageData) {
+  const { width, height, data } = imageData;
+  const rowSize = Math.floor((width * 3 + 3) / 4) * 4;
+  const pixelBytes = rowSize * height;
+  const buffer = new ArrayBuffer(54 + pixelBytes);
+  const view = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
+  view.setUint8(0, 0x42); view.setUint8(1, 0x4d);
+  view.setUint32(2, buffer.byteLength, true);
+  view.setUint32(10, 54, true);
+  view.setUint32(14, 40, true);
+  view.setInt32(18, width, true);
+  view.setInt32(22, height, true);
+  view.setUint16(26, 1, true);
+  view.setUint16(28, 24, true);
+  view.setUint32(34, pixelBytes, true);
+  view.setInt32(38, 2835, true); view.setInt32(42, 2835, true);
+  for (let y = 0; y < height; y++) {
+    const dstRow = 54 + (height - 1 - y) * rowSize;
+    for (let x = 0; x < width; x++) {
+      const src = (y * width + x) * 4;
+      const dst = dstRow + x * 3;
+      bytes[dst] = data[src + 2];
+      bytes[dst + 1] = data[src + 1];
+      bytes[dst + 2] = data[src];
+    }
+  }
+  return new Blob([buffer], { type: 'image/bmp' });
+}
+
+// ICO válido con un PNG embebido (compatible con lectores ICO modernos).
+async function wrapPngAsIco(pngBlob, width, height) {
+  const pngBytes = new Uint8Array(await pngBlob.arrayBuffer());
+  const header = new ArrayBuffer(22);
+  const view = new DataView(header);
+  view.setUint16(0, 0, true); // reserved
+  view.setUint16(2, 1, true); // icon type
+  view.setUint16(4, 1, true); // one image
+  view.setUint8(6, width >= 256 ? 0 : width);
+  view.setUint8(7, height >= 256 ? 0 : height);
+  view.setUint8(8, 0); // palette
+  view.setUint8(9, 0);
+  view.setUint16(10, 1, true);
+  view.setUint16(12, 32, true);
+  view.setUint32(14, pngBytes.byteLength, true);
+  view.setUint32(18, 22, true);
+  return new Blob([header, pngBytes], { type: 'image/x-icon' });
+}
+
+function createResultCard(url, filename, size) {
   const item = document.createElement('div');
   item.className = 'result-item';
-
   const thumb = document.createElement('img');
   thumb.className = 'result-thumb';
+  thumb.alt = '';
   thumb.src = url;
-
   const info = document.createElement('div');
   info.className = 'result-info';
-
   const name = document.createElement('div');
   name.className = 'result-filename';
   name.textContent = filename;
-
-  info.appendChild(name);
-
-  const downloadBtn = document.createElement('a');
-  downloadBtn.className = 'download-link-btn';
-  downloadBtn.href = url;
-  downloadBtn.download = filename;
-  downloadBtn.textContent = getText('saveBtn', 'Save');
-
-  item.appendChild(thumb);
-  item.appendChild(info);
-  item.appendChild(downloadBtn);
-
+  const meta = document.createElement('div');
+  meta.className = 'preview-size';
+  meta.textContent = formatBytes(size);
+  info.append(name, meta);
+  const download = document.createElement('a');
+  download.className = 'download-link-btn';
+  download.href = url;
+  download.download = filename;
+  download.textContent = translations[userLang]?.saveBtn || text('saveBtn', 'Save');
+  item.append(thumb, info, download);
   resultsList.appendChild(item);
 }
 
-function getOutputFilename(originalName, newExt) {
+function createErrorCard(filename, message) {
+  const item = document.createElement('div');
+  item.className = 'result-item result-item-error';
+  const info = document.createElement('div');
+  info.className = 'result-info';
+  const name = document.createElement('div');
+  name.className = 'result-filename';
+  name.textContent = `${filename} — ${text('conversionError')}`;
+  const detail = document.createElement('div');
+  detail.className = 'preview-size';
+  detail.textContent = message;
+  info.append(name, detail);
+  item.appendChild(info);
+  resultsList.appendChild(item);
+}
+
+function getOutputFilename(originalName, extension) {
   const lastDot = originalName.lastIndexOf('.');
-  const baseName = lastDot !== -1 ? originalName.substring(0, lastDot) : originalName;
-  return `${baseName}.${newExt}`;
+  const baseName = lastDot > 0 ? originalName.substring(0, lastDot) : originalName;
+  return `${baseName}.${extension}`;
 }
 
 function formatBytes(bytes) {
-  if (bytes === 0) return '0 KB';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  }
-    
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+  const units = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  return `${parseFloat((bytes / Math.pow(1024, index)).toFixed(1))} ${units[index]}`;
+}
