@@ -22,8 +22,9 @@
    RESET FULL-SCREEN (Elimina bordes flotantes)
    ========================================== */
 html, body {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100vh;   /* respaldo para navegadores viejos */
+  height: 100dvh;  /* altura real en celular (descuenta la barra del navegador) */
   background-color: var(--bg-color);
   color: var(--text-main);
   overflow: hidden;
@@ -45,7 +46,7 @@ body::before {
 }
 
 /* ==========================================
-   CONTENEDOR APP NATIVA (Ocupa 100vw x 100vh)
+   CONTENEDOR APP NATIVA (Ocupa toda la pantalla)
    ========================================== */
 .container {
   position: relative;
@@ -54,11 +55,13 @@ body::before {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: 32px 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
   border-radius: 0;       /* Quita bordes redondeados flotantes */
   box-shadow: none;        /* Quita sombra de tarjeta */
   border: none;
-  width: 100vw;            /* Ocupa todo el ancho */
-  height: 100vh;           /* Ocupa todo el alto */
+  width: 100%;             /* Ocupa todo el ancho */
+  height: 100vh;
+  height: 100dvh;          /* Ocupa todo el alto visible */
   max-width: none;         /* Elimina límite de 500px */
   display: flex;
   flex-direction: column;
@@ -110,6 +113,7 @@ body::before {
 .input-group {
   margin-bottom: 20px;
   text-align: left;
+  flex-shrink: 0;
 }
 
 .label-title {
@@ -299,6 +303,7 @@ input[type="color"]::-webkit-color-swatch {
   display: none;
   text-align: left;
   animation: fadeIn 0.3s ease-in-out;
+  flex-shrink: 0;
 }
 
 @keyframes fadeIn {
@@ -423,6 +428,8 @@ button#convertBtn {
   box-shadow: 0 8px 20px var(--primary-red-glow);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: 10px;
+  margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 button#convertBtn:hover {
@@ -430,11 +437,40 @@ button#convertBtn:hover {
   transform: translateY(-1px);
 }
 
+/* Botón desactivado mientras convierte */
+button#convertBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ==========================================
+   RECUADRO VERDE DE PRIVACIDAD
+   ========================================== */
+.local-privacy-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;   /* Queda abajo con poco contenido y baja con los resultados */
+  padding: 12px 16px;
+  background: rgba(74, 222, 128, 0.10);
+  border: 1px solid rgba(74, 222, 128, 0.30);
+  border-radius: 12px;
+  color: #4ade80;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  flex-shrink: 0;
+}
+
 /* ==========================================================
    ADAPTABILIDAD PARA PANTALLAS GRANDES (Mantiene el Full Screen)
-   ================================================---------- */
+   ========================================================== */
 @media (min-width: 768px) {
   .container {
     padding: 42px 60px;
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
   }
 }
