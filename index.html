@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Silix — Image Converter</title>
+  <!-- Vinculación del archivo CSS externo -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1 class="brand-title">Silix.IMG<span class="red-dot">.</span></h1>
+      <span class="subtitle-badge" id="subTitleText" data-i18n="subtitle">Image Converter</span>
+    </div>
+
+    <div class="input-group">
+      <span class="label-title" id="labelSelect" data-i18n="labelSelect">Select your image(s):</span>
+      
+      <div class="drop-zone" id="dropZone">
+        <svg class="drop-zone-icon" viewBox="0 0 24 24">
+          <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+        </svg>
+        <div class="drop-zone-text" id="dropZoneText" data-i18n="dropZoneText">Tap to select images</div>
+        <div class="drop-zone-hint" data-i18n="dropZoneHint">Supports PNG, JPG, WEBP, GIF, AVIF, BMP, ICO, HEIC, SVG</div>
+        <input type="file" id="imageInput" multiple accept="image/*,.heic,.heif">
+      </div>
+    </div>
+
+    <div class="preview-container" id="previewContainer">
+      <div class="preview-header">
+        <span class="preview-title" id="labelPreview" data-i18n="labelPreview">Preview:</span>
+        <button type="button" class="remove-all-btn" id="removeAllBtn" data-i18n="removeAllBtn">Remove all</button>
+      </div>
+      <div class="preview-list" id="previewList"></div>
+    </div>
+
+    <div class="input-group">
+      <span class="label-title" id="labelFormat" data-i18n="labelFormat">Convert to:</span>
+      <select id="formatSelect">
+        <option value="png">PNG</option>
+        <option value="webp">WEBP</option>
+        <option value="jpeg">JPG / JPEG</option>
+        <option value="avif">AVIF</option>
+        <option value="gif">GIF</option>
+        <option value="bmp">BMP</option>
+        <option value="x-icon">ICO (Icon)</option>
+        <option value="pdf">PDF</option>
+      </select>
+    </div>
+
+    <!-- Calidad: solo se muestra en JPG, WEBP, AVIF y PDF -->
+    <div class="input-group" id="qualityGroup">
+      <span class="label-title" id="labelQuality" data-i18n="labelQuality">Quality:</span>
+      <div class="range-box">
+        <input type="range" id="qualityRange" min="10" max="100" step="1" value="92" aria-labelledby="labelQuality">
+        <output id="qualityValue" for="qualityRange">92%</output>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <span class="label-title" id="labelSize" data-i18n="labelSize">Size:</span>
+      <select id="sizeSelect">
+        <option value="original" data-i18n="sizeOriginal">Original</option>
+        <option value="p75">75%</option>
+        <option value="p50">50%</option>
+        <option value="p25">25%</option>
+        <option value="1920">1920 px</option>
+        <option value="1280">1280 px</option>
+        <option value="1024">1024 px</option>
+        <option value="800">800 px</option>
+        <option value="512">512 px</option>
+      </select>
+    </div>
+
+    <div class="input-group" id="bgColorGroup">
+      <div class="switch-container">
+        <span class="switch-label" id="labelFillBg" data-i18n="labelFillBg">Replace transparency with color</span>
+        <label class="switch">
+          <input type="checkbox" id="fillBgCheckbox">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="color-picker-box" id="colorPickerBox" style="display: none;">
+        <span class="label-title" id="labelBgColor" style="margin-bottom: 0;" data-i18n="labelBgColor">Background color:</span>
+        <input type="color" id="bgColor" value="#ffffff">
+      </div>
+    </div>
+
+    <button id="convertBtn" data-i18n="convertBtn">Convert Image</button>
+
+    <!-- Lista de descargas para Android/PC -->
+    <div class="results-container" id="resultsContainer">
+      <div class="preview-header">
+        <span class="preview-title" style="color: #4ade80;" data-i18n="resultsTitle">Converted Images:</span>
+        <button type="button" class="zip-btn" id="zipBtn" data-i18n="zipBtn" style="display: none;">Download all (ZIP)</button>
+      </div>
+      <div class="results-list" id="resultsList"></div>
+    </div>
+
+    <!-- Badge de procesamiento 100% local -->
+    <div class="local-privacy-badge">
+      <span>⚡</span> <span id="privacyText" data-i18n="privacyText">100% Local Processing — Your images never leave your device</span>
+    </div>
+
+  </div>
+
+  <canvas id="canvas" style="display: none;"></canvas>
+
+  <!-- Vinculación del archivo JavaScript externo -->
+  <script src="script.js"></script>
+</body>
+</html>
